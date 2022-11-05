@@ -17,6 +17,7 @@ class _AnchorTargetLayer(nn.Module):
         batch_size = gt_boxes.size(0)
         
         # Generate default anchors with shape: shifts X base_anchors X 4
+        # 生成一张图中所有的anchor
         anchors = generate(feature_h=height, feature_w=width)
         anchors = anchors.view(-1, 4).to(gt_boxes)
         

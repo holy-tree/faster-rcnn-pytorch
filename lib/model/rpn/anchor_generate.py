@@ -11,6 +11,7 @@ def generate(feature_h, feature_w, base_size=16):
     anchors = torch.cat([_scale_enum(ratio_anchors[i, :], scales)
                          for i in range(ratio_anchors.shape[0])])
                          
+    # 生成一张图所有anchor中心坐标的偏移
     shift_x = torch.arange(0, feature_w) * feature_stride
     shift_y = torch.arange(0, feature_h) * feature_stride
     shift_x, shift_y = torch.meshgrid(shift_x, shift_y)

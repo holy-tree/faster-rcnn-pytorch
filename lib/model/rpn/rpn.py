@@ -14,18 +14,18 @@ class _RPN(nn.Module):
                                       
         _anchors_per_point = len(cfg.RPN.ANCHOR_SCALES) * len(cfg.RPN.ANCHOR_RATIOS)
         
-        # define bg/fg classifcation score layer
+        # define bg/fg classifcation score layer 计算分类得分
         self.nc_score_out = _anchors_per_point * 2 # 2(bg/fg) * 9 (anchors)
         self.RPN_cls_score = nn.Conv2d(in_depth, self.nc_score_out, 1, 1, 0)
 
-        # define anchor box offset prediction layer
+        # define anchor box offset prediction layer 计算bbox
         self.nc_bbox_out = _anchors_per_point * 4 # 4(coords) * 9 (anchors)
         self.RPN_bbox_pred = nn.Conv2d(in_depth, self.nc_bbox_out, 1, 1, 0)
         
-        # define proposal layer
+        # define proposal layer 获取proposal
         self.RPN_proposal = _ProposalLayer(_anchors_per_point)
 
-        # define anchor target layer
+        # define anchor target layer 用于计算loss
         self.RPN_anchor_target = _AnchorTargetLayer(_anchors_per_point)
         
     def forward(self, base_feature, im_info, gt_boxes):
@@ -46,12 +46,14 @@ class _RPN(nn.Module):
         rpn_bbox_pred = self.RPN_bbox_pred(rpn_conv) # B x A*4 x H x W
         
         cfg_key = 'TRAIN' if self.training else 'TEST'
+        # 根据cls和bbox排序获取RPN得到的proposal
         rois = self.RPN_proposal((rpn_cls_prob.data, rpn_bbox_pred.data, im_info, cfg_key))
         
         self.rpn_loss_cls = 0
         self.rpn_loss_box = 0
         
         if self.training:
+            # 获取gt信息 label和proposal rpn_label只有0和1表示背景和前景
             rpn_data = self.RPN_anchor_target((rpn_cls_score.size(), gt_boxes, im_info))
             rpn_label, bbox_targets, pos_idx = rpn_data
             

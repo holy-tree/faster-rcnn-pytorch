@@ -10,11 +10,7 @@ from dataset.image_dataset import ImageDataset
 from dataset.voc.voc_eval import voc_eval
 
 _CLASSES = ('__background__',  # always index 0
-           'aeroplane', 'bicycle', 'bird', 'boat',
-           'bottle', 'bus', 'car', 'cat', 'chair',
-           'cow', 'diningtable', 'dog', 'horse',
-           'motorbike', 'person', 'pottedplant',
-           'sheep', 'sofa', 'train', 'tvmonitor')
+           'N')
 
 class PascalVoc(ImageDataset):
     def __init__(self, image_set, year, params, only_classes=False):
@@ -65,6 +61,7 @@ class PascalVoc(ImageDataset):
         
     def _load_annotation(self, idx, id):
         img_path = self.image_path_at(id)
+     
         img_size = cv.imread(img_path).shape
         file_name = os.path.join(self._data_path, 'Annotations', id + '.xml')
         tree = ET.parse(file_name)
@@ -85,6 +82,11 @@ class PascalVoc(ImageDataset):
             y1 = int(bndbox.find('ymin').text) - 1
             x2 = int(bndbox.find('xmax').text) - 1
             y2 = int(bndbox.find('ymax').text) - 1
+            # x1 = int(bndbox.find('xmin').text) 
+            # y1 = int(bndbox.find('ymin').text) 
+            # x2 = int(bndbox.find('xmax').text) 
+            # y2 = int(bndbox.find('ymax').text) 
+           
             boxes[idx, :] = [x1, y1, x2, y2]
             
             difficult = obj.find('difficult')
@@ -95,7 +97,7 @@ class PascalVoc(ImageDataset):
             truncated = 0 if truncated is None else int(truncated.text)
             is_truncated[idx] = truncated
             
-            cls = self._class_index[obj.find('name').text.lower().strip()]
+            cls = self._class_index[obj.find('name').text.strip()]
             gt_classes[idx] = cls
             overlaps[idx, cls] = 1.0
             areas[idx] = (x2 - x1 + 1) * (y2 - y1 + 1)

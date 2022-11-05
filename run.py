@@ -13,7 +13,7 @@ from utils.net_utils import parse_additional_params
 
 
 def add_common_parser_arguments(parser):
-    parser.add_argument('-n', '--net', default='vgg16',
+    parser.add_argument('-n', '--net', default='resnet101',
                         help='backbone for faster rcnn network',
                         choices=['vgg16', 'resnet18', 'resnet34', 'resnet50',
                                  'resnet101', 'resnet152'])
@@ -89,6 +89,7 @@ parser_detect.add_argument('-ap', '--add_params', nargs=argparse.REMAINDER,
                            default=[], help='additional parameters')
 
 if __name__ == "__main__":
+    # os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
     init(autoreset=True)
 
     cfg.ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -138,7 +139,7 @@ if __name__ == "__main__":
               pretrain=args.pretrain, resume=args.resume, class_agnostic=args.class_agnostic,
               total_epoch=args.total_epoch, display_interval=args.display_interval,
               session=args.session, epoch=args.epoch, save_dir=args.save_dir,
-              vis_off=args.vis_off, mGPU=args.mGPU, add_params=add_params)
+              vis_off=False, mGPU=args.mGPU, add_params=add_params)
     elif args.mode == 'test':
         test(dataset=args.dataset, net=args.net, class_agnostic=args.class_agnostic,
              load_dir=args.load_dir, session=args.session, epoch=args.epoch,
@@ -146,6 +147,6 @@ if __name__ == "__main__":
     else:
         detect(dataset=args.dataset, net=args.net, class_agnostic=args.class_agnostic,
                load_dir=args.load_dir, session=args.session, epoch=args.epoch,
-               vis=args.vis, image_dir=args.image_dir, add_params=add_params)
+               vis=True, image_dir=args.image_dir, add_params=add_params)
 
     deinit()

@@ -35,10 +35,12 @@ class FasterRCNN(nn.Module):
         batch_size = im_data.size(0)
         
         base_feature = self.RCNN_base(im_data)
+        # 进入RPN 获取proposal信息、分类loss、锚框loss
         rois, rpn_loss_cls, rpn_loss_bbox = self.RCNN_rpn(base_feature, im_info, gt_boxes)
         
         if self.training:
-            roi_data = self.RCNN_proposal_target(rois, gt_boxes)
+            # 获取proposal、gt标签、gt框
+            roi_data = self.RCNN_proposal_target(rois, gt_boxes)  
             rois, rois_label, rois_target = roi_data
             
             rois_label = rois_label.view(-1).long()
@@ -81,6 +83,7 @@ class FasterRCNN(nn.Module):
             bbox_pred = bbox_transform_inv(rois[:, :, 1:5], bbox_pred, self.regression_weights)
             bbox_pred = clip_boxes(bbox_pred, im_info, batch_size)
 
+        # 分类得分、框、rpn分类损失、rpn锚框损失、RCNN分类损失、RCNN锚框损失
         return cls_score, bbox_pred, rpn_loss_cls, rpn_loss_bbox, RCNN_loss_cls, RCNN_loss_bbox
 
     def _prepare_pooled_feature(self, pooled_feature):

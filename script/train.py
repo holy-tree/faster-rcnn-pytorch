@@ -17,7 +17,9 @@ from utils.net_utils import clip_gradient
 def train(dataset, net, batch_size, learning_rate, optimizer, lr_decay_step,
           lr_decay_gamma, pretrain, resume, class_agnostic, total_epoch,
           display_interval, session, epoch, save_dir, vis_off, mGPU, add_params):
-    device = torch.device('cuda:0') if cfg.CUDA else torch.device('cpu')
+    # device = torch.device('cuda:0') if cfg.CUDA else torch.device('cpu')
+    torch.cuda.set_device(1)
+    device = 1
     print(Back.CYAN + Fore.BLACK + 'Current device: %s' % (str(device).upper()))
 
     if batch_size is not None:
@@ -38,7 +40,7 @@ def train(dataset, net, batch_size, learning_rate, optimizer, lr_decay_step,
     print('TRAIN:')
     pprint.pprint(cfg.TRAIN)
     print('RPN:')
-    pprint.pp(cfg.RPN)
+    pprint.pprint(cfg.RPN)
 
     dataset, ds_name = dataset_factory.get_dataset(dataset, add_params)
     loader = DataLoader(dataset, batch_size=cfg.TRAIN.BATCH_SIZE,
@@ -118,6 +120,11 @@ def train(dataset, net, batch_size, learning_rate, optimizer, lr_decay_step,
         from visualize.plotter import Plotter
         plotter = Plotter()
 
+    loss_txt_path = os.path.join(cfg.DATA_DIR, 'loss.txt')
+    loss_txt = open(loss_txt_path, mode='w')
+    loss_txt.write('loss\titer\trpn_cls\trpn_box\trcnn_cls\trcnn_box\n')
+    loss_txt.close()
+
     for current_epoch in range(start_epoch, total_epoch + 1):
         loss_temp = 0
         start = time.time()
@@ -126,6 +133,8 @@ def train(dataset, net, batch_size, learning_rate, optimizer, lr_decay_step,
             image_data = data[0].to(device)
             image_info = data[1].to(device)
             gt_boxes = data[2].to(device)
+
+            
 
             *_, rpn_loss_cls, rpn_loss_bbox, \
                 RCNN_loss_cls, RCNN_loss_bbox = faster_rcnn(image_data, image_info, gt_boxes)
@@ -156,6 +165,11 @@ def train(dataset, net, batch_size, learning_rate, optimizer, lr_decay_step,
                       % (loss_temp, optimizer.param_groups[0]['lr'], end-start))
                 print('rpn_cls: %.4f, rpn_box: %.4f, rcnn_cls: %.4f, rcnn_box %.4f'
                       % (loss_rpn_cls, loss_rpn_bbox, loss_rcnn_cls, loss_rcnn_bbox))
+
+                loss_txt = open(loss_txt_path, 'a')
+                loss_txt.write(f"{loss_temp}\t{step}\t{loss_rpn_cls}\t{loss_rpn_bbox}\t{loss_rcnn_cls}\t{loss_rcnn_bbox}\n")
+                loss_txt.close()
+
 
                 if not vis_off:
                     plotter_data = {'session': session,

@@ -11,18 +11,18 @@ class ImageDataset(Dataset):
         self._image_index = []
         self._image_data = None
 
-        color_mode = params['color_mode'].upper() if 'color_mode' in params else 'BGR'
+        color_mode = params['color_mode'].upper() if 'color_mode' in params else 'RGB'
         assert color_mode == 'RGB' or color_mode == 'BGR', \
             'Allowed only RGB or BGR color mode. Actual: {}'.format(color_mode)
 
-        range = 255 if 'image_range' not in params else params['image_range']
+        range = 1 if 'image_range' not in params else params['image_range']
         assert range == 1 or range == 255, \
             'Allowed only 1 or 255 image range. Actual: {}'.format(range)
         
-        mean = [102.9801,
-                115.9465,
-                122.7717] if 'mean' not in params else params['mean']
-        std = [1.0, 1.0, 1.0] if 'std' not in params else params['std']
+        mean = [0.485,
+                0.456,
+                0.406] if 'mean' not in params else params['mean']
+        std = [0.229, 0.224, 0.225] if 'std' not in params else params['std']
 
         self._config = {'color_mode': color_mode,
                         'range': range,

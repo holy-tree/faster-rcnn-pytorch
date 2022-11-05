@@ -16,7 +16,9 @@ from _C import nms
 
 def detect(dataset, net, class_agnostic, load_dir, session, epoch, vis, 
            image_dir, add_params):
-    device = torch.device('cuda:0') if cfg.CUDA else torch.device('cpu')
+    # device = torch.device('cuda:1') if cfg.CUDA else torch.device('cpu')
+    torch.cuda.set_device(1)
+    device = torch.device('cuda:1')
     print(Back.CYAN + Fore.BLACK + 'Current device: %s' % (str(device).upper()))
 
     if 'cfg_file' in add_params:
@@ -28,7 +30,7 @@ def detect(dataset, net, class_agnostic, load_dir, session, epoch, vis,
     print('TEST:')
     pprint.pprint(cfg.TEST)
     print('RPN:')
-    pprint.pp(cfg.RPN)
+    pprint.pprint(cfg.RPN)
 
     image_dir = os.path.join(cfg.DATA_DIR, image_dir)
 
@@ -68,15 +70,29 @@ def detect(dataset, net, class_agnostic, load_dir, session, epoch, vis,
 
     faster_rcnn.eval()
 
+    # print(faster_rcnn)
+
     for i, data in enumerate(loader):
         image_data = data[0].to(device)
         image_info = data[1].to(device)
 
+
+        # print(image_data)
+        # print(image_data.size())
+        # print(image_info)
+        # print(image_info.size())
+
         total_tic = time.time()
+
         im2show = cv.imread(dataset.image_path_at(data[3][0]))
+
         det_tic = time.time()
         with torch.no_grad():
             cls_score, bbox_pred, *_ = faster_rcnn(image_data, image_info, None)
+
+        # print(cls_score)
+        # print(bbox_pred)
+
 
         bbox_pred /= image_info[0][2].item()
 
@@ -85,6 +101,10 @@ def detect(dataset, net, class_agnostic, load_dir, session, epoch, vis,
         det_toc = time.time()
         detect_time = det_toc - det_tic
         misc_tic = time.time()
+
+        # print(scores)
+        # print(scores.size())
+
         for j in range(1, len(classes)):
             inds = torch.nonzero(scores[:, j] > 0.05).view(-1)
             # if there is det
@@ -102,6 +122,7 @@ def detect(dataset, net, class_agnostic, load_dir, session, epoch, vis,
                 cls_dets = cls_dets[keep.view(-1).long()]
                 if vis:
                     im2show = vis_detections(im2show, classes[j], cls_dets.cpu().numpy(), 0.5)
+                    # print(123)
 
         misc_toc = time.time()
         nms_time = misc_toc - misc_tic

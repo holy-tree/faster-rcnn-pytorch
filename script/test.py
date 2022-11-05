@@ -15,7 +15,9 @@ from model.resnet import Resnet
 from _C import nms
 
 def test(dataset, net, class_agnostic, load_dir, session, epoch, add_params):
-    device = torch.device('cuda:0') if cfg.CUDA else torch.device('cpu')
+    # device = torch.device('cuda:1') if cfg.CUDA else torch.device('cpu')
+    torch.cuda.set_device(1)
+    device = torch.device('cuda:1')
     print(Back.CYAN + Fore.BLACK + 'Current device: %s' % (str(device).upper()))
 
     if 'cfg_file' in add_params:
@@ -27,12 +29,13 @@ def test(dataset, net, class_agnostic, load_dir, session, epoch, add_params):
     print('TEST:')
     pprint.pprint(cfg.TEST)
     print('RPN:')
-    pprint.pp(cfg.RPN)
+    pprint.pprint(cfg.RPN)
 
     # TODO: add competition mode
     dataset, ds_name = dataset_factory.get_dataset(dataset, add_params, mode='test')
     loader = DataLoader(dataset, batch_size=1, shuffle=False, 
                         collate_fn=collate_test)
+
 
     if 'data_path' in add_params: cfg.DATA_DIR = add_params['data_path']
     output_dir = os.path.join(cfg.DATA_DIR, 'output', net, ds_name)
@@ -64,6 +67,7 @@ def test(dataset, net, class_agnostic, load_dir, session, epoch, add_params):
     all_boxes = [[[] for _ in range(len(dataset))] for _ in range(dataset.num_classes)]
 
     faster_rcnn.eval()
+    
 
     for i, data in enumerate(loader):
         image_data = data[0].to(device)
@@ -73,14 +77,19 @@ def test(dataset, net, class_agnostic, load_dir, session, epoch, add_params):
         with torch.no_grad():
             cls_score, bbox_pred, *_ = faster_rcnn(image_data, image_info, None)
 
+        if i == 0:
+            onnx_path = os.path.join(cfg.DATA_DIR, 'onnx_model.onnx')
+            torch.onnx.export(faster_rcnn, (image_data, image_info, None), onnx_path, export_params=True, opset_version=8)
+
+
         bbox_pred /= image_info[0][2].item()
 
         scores = cls_score.squeeze()
         bbox_pred = bbox_pred.squeeze()
         det_toc = time.time()
         detect_time = det_toc - det_tic
-
         misc_tic = time.time()
+
         for j in range(1, dataset.num_classes):
             inds = torch.nonzero(scores[:,j] > 0.05).view(-1)
             if inds.numel() > 0:
